@@ -1,0 +1,42 @@
+#!/usr/bin/env python2.7
+
+import boto3
+import sys
+import time
+import os
+import fnmatch
+import ConfigParser
+
+from os.path import join, basename
+from argparse import ArgumentParser
+from zipfile import ZipFile
+
+from lambdahandler  import LambdaHandler
+
+class CloudDeploy:
+    def __init__(self):
+        config = ConfigParser.ConfigParser()
+        try:
+            config.readfp(open('default.cfg'))
+        except IOError:
+            print("No config file present.")
+
+        self.parser = ArgumentParser()
+        self.parser.add_argument('--target', type=str, default='dev')
+
+        subparsers = self.parser.add_subparsers()
+
+        lambda_parser = subparsers.add_parser('lambda')
+        lambda_parser.add_argument('--create',  action='store_true')
+        lambda_parser.add_argument('--update',  action='store_true')
+        lambda_parser.add_argument('--destroy', action='store_true')
+        lambda_parser.add_argument('--publish', action='store_true')
+        lambda_parser.add_argument('--alias',   type=str)
+        lambda_parser.set_defaults(func = LambdaHandler(config))
+
+    def run(self, cmd_args):
+        args = self.parser.parse_args(cmd_args)
+        args.func(args)
+
+if __name__ == "__main__":
+    CloudDeploy().run(sys.argv[1:])
